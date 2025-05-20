@@ -1,4 +1,4 @@
-resource "aws_instance" "bastion" {
+resource "aws_instance" "instances_bastion" {
   instance_type = var.ec2_instance_type
   ami = data.aws_ami.ubuntu_ami.id
   associate_public_ip_address= "true"

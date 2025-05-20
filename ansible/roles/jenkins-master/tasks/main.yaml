@@ -1,0 +1,58 @@
+
+- name: Install required packages
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+    state: present
+    update_cache: true
+
+- name: Add Docker’s official GPG key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker repository
+  apt_repository:
+    repo: deb https://download.docker.com/linux/ubuntu focal stable
+    state: present
+
+- name: Install Docker
+  apt:
+    name: docker-ce
+    state: latest
+    update_cache: true
+
+- name: Create build directory
+  file:
+    path: /tmp/jenkins-master
+    state: directory
+    mode: '0755'
+
+- name: Copy jenkins-master Dockerfile to /tmp/jenkins-master
+  copy:
+    src: ../../../Dockerfiles/Dockerfile.jenkins-master  
+    dest: /tmp/jenkins-master/Dockerfile
+    mode: '0644'
+
+
+- name: Build jenkins master Dockerfile
+  community.docker.docker_image:
+    name: jenkins-master
+    build:
+      path: /tmp/jenkins-master
+
+
+
+- name: run container for jenkins master from jenkins-master community.docker.docker_image
+  community.docker.docker_container:
+    name: jenkins-master-container
+    image: jenkins-master
+    state: started
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_data:/var/jenkins_home

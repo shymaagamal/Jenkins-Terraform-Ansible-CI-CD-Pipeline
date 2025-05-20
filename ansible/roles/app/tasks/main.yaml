@@ -1,0 +1,23 @@
+- name: Install nginx
+  apt:
+    name: nginx
+    state: latest
+    update_cache: yes
+  notify: restart nginx
+
+- name: Copy custom index.html to Nginx path
+  copy:
+    src: index.html
+    dest: /var/www/html/index.html
+    owner: ubuntu
+    group: ubuntu
+    mode: '0644'
+
+- name: Copy assets folder to Nginx path
+  copy:
+    src: assets/
+    dest: /var/www/html/assets/
+    owner: ubuntu
+    group: ubuntu
+    mode: '0755'
+
