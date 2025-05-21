@@ -41,11 +41,7 @@ pipeline {
                                     secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                                     ]
                                     ]) {
-                    dir('terraform'){
-                      sh '''
-                        echo "Injected AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID: -4}"
-                        '''
- 
+                    dir('terraform'){ 
                       sh 'terraform init'
                       sh 'terraform plan'
                       sh 'terraform apply -auto-approve'
