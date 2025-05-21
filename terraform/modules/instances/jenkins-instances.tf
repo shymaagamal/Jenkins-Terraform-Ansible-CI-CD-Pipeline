@@ -21,7 +21,7 @@ resource "aws_instance" "instances_jenkin_slave" {
     Name = "jenkin_slave"
   }
 }
-resource "aws_instance" "instances_jenkin_slave2" {
+resource "aws_instance" "instances_jenkin_slave3" {
   instance_type = var.ec2_instance_type
   ami = data.aws_ami.ubuntu_ami.id
   associate_public_ip_address= "false"

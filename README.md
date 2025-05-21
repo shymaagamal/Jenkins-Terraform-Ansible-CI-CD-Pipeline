@@ -157,3 +157,59 @@ I ran the following command **inside the Jenkins master container**:
 ```bash
 ssh-keyscan -p 2222 10.0.1.224 >> /var/jenkins_home/.ssh/known_hosts
 ```
+## 🔧🚀 Creating a Jenkins Pipeline
+### 📌 Steps:
+- Create a New Pipeline Job
+-  Click “New Item” →
+-  Enter a name like my-pipeline →
+- Choose Pipeline → Click OK
+- In Triggers section → check `GitHub hook trigger for GITScm polling` 
+- Scroll down to Pipeline Definition
+- Choose Pipeline script from SCM
+- Set: SCM: Git
+- Repository URL: [this GitHub Repo](https://github.com/shymaagamal/Jenkins-Terraform-Ansible-CI-CD-Pipeline.git)
+
+
+- Credentials: add GitHub creds
+- Branches to build: */main 
+- Jenkinsfile location: Jenkinsfile (root)
+## 🌐 Setting Up ngrok to Expose Jenkins
+When using GitHub webhooks with Jenkins on a private/local network (e.g., localhost:8080), GitHub can't reach my machine directly.
+That's where ngrok comes in — it exposes my local Jenkins server to the internet securely via a public URL
+### 🚀 Steps
+- Register for an ngrok Account
+Before using ngrok, create a free account here and get my personal auth token:
+[👉 Get Your ngrok Authtoken](https://dashboard.ngrok.com/get-started/your-authtoken)
+-  Install ngrok on my Local Machine:[Linux installation guide](https://ngrok.com/downloads/linux?tab=snap)
+- Authenticate ngrok with my Token
+After installation, connect your machine to my ngrok account by running
+```bash
+ngrok config add-authtoken <MY_NGROK_TOKEN>
+```
+- Start Port Forwarding Jenkins (Port 8080)
+```bash
+ngrok http 8080
+```
+> **📎 Copy this URL — you'll need it for your GitHub webhook setup:**  
+> 👉 `https://abcd1234.ngrok.io`
+
+### 🔧 Updating Jenkins URL with ngrok Public URL
+- Open Jenkins in my browser (using http://localhost:8080).
+-  Manage Jenkins → Configure System
+- scroll to the section Jenkins URL.
+- Replace the default (http://localhost:8080) with my ngrok URL:
+`https://abcd1234.ngrok.io`
+- Click Save.
+
+🔗 This step is essential — GitHub uses this URL to send webhook payloads. If it's not set correctly, your webhook won't trigger the pipeline!
+
+## Creating a GitHub Webhook
+- Navigate to Settings → Webhooks → Add Webhook
+- Payload URL: `https://abcd1234.ngrok.io`/github-webhook/
+- Content type: application/json
+- Which events? → Choose Just the push event
+- Click Add Webhook
+
+`💡 Note: Jenkins automatically handles /github-webhook/ if GitHub plugin is installed.`
+
+
