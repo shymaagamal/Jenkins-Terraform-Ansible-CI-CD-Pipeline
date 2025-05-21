@@ -43,6 +43,27 @@ ingress {
   protocol                 = "tcp"
   security_groups          = [aws_security_group.network_albSG_allow_HTTP.id]
 }
+ingress {
+  description = "Allow SSH from self"
+  from_port   = 2222
+  to_port     = 2222
+  protocol    = "tcp"
+  self        = true
+}
+ingress {
+  description = "Allow ICMP (ping) from self"
+  from_port   = -1
+  to_port     = -1
+  protocol    = "icmp"
+  self        = true
+}
+ingress {
+  description = "Jenkins Port 8080 from Bastion Host"
+  from_port   = 8080
+  to_port     = 8080
+  protocol    = "tcp"
+  cidr_blocks = [aws_subnet.network_public_subnet01.cidr_block]
+}
   egress {
     description = "Allow all outbound traffic to NAT Gateway"
     from_port   = 0

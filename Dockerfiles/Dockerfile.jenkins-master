@@ -1,0 +1,20 @@
+FROM jenkins/jenkins:lts
+
+USER root
+
+RUN apt-get update && \ 
+     apt-get install -y docker-ce docker-ce-cli containerd.io  && \
+    usermod -aG docker jenkins && \
+    echo "jenkins ALL=NOPASSWD: ALL" >> /etc/sudoers
+   
+RUN mkdir -p /var/jenkins_home/.ssh && \
+    chown jenkins:jenkins /var/jenkins_home/.ssh && \
+    chmod 700 /var/jenkins_home/.ssh
+
+USER jenkins
+
+
+
+RUN ssh-keygen -t rsa -b 4096 -N "" -f /.ssh/id_rsa
+    
+EXPOSE 8080 50000

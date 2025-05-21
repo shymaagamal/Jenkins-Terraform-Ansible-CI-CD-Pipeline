@@ -38,13 +38,28 @@
     mode: '0644'
 
 
+- name: Ensure pip3 is installed on ubuntu
+  apt: 
+    name: python3-pip
+    state: present
+
+
+- name: Ensure Docker SDK for Python is installed
+  ansible.builtin.pip:
+    name: docker
+    executable: pip3
+
 - name: Build jenkins master Dockerfile
   community.docker.docker_image:
     name: jenkins-master
+    source: build
     build:
       path: /tmp/jenkins-master
 
-
+- name: Ensure jenkins_data volume exists
+  community.docker.docker_volume:
+    name: jenkins_data
+    state: present
 
 - name: run container for jenkins master from jenkins-master community.docker.docker_image
   community.docker.docker_container:
@@ -56,3 +71,19 @@
       - "50000:50000"
     volumes:
       - jenkins_data:/var/jenkins_home
+   
+
+# - name : extract ssh public key to copy this in slave container 
+#   command: docker exec jenkins-master-container cat /var/jenkins_home/.ssh/id_rsa.pub
+#   register: master_pubkey 
+
+# - name: Save key as a fact
+#   set_fact:
+#         master_ssh_pubkey: "{{ master_key.stdout }}"
+
+# - name: Save key to a file on controller (localhost)
+#   copy:
+#     content: "{{ master_pubkey.stdout }}"
+#     dest: "/tmp/master_ssh_key.pub"
+#     mode: '0644'
+#   delegate_to: 10.0.1.254        

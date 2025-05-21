@@ -1,0 +1,33 @@
+# Base image
+FROM ubuntu:22.04
+
+
+# Prevent interactive prompts during build
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update and install required packages
+RUN apt-get update && \
+    apt-get install -y openssh-server openjdk-17-jdk sudo curl unzip git && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Set JAVA_HOME (optional, for clarity)
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV PATH="$JAVA_HOME/bin:$PATH"
+
+# Create Jenkins user
+RUN useradd -m -s /bin/bash jenkins && echo "jenkins:jenkins" | chpasswd && \
+    mkdir /home/jenkins/.ssh && \
+    chown -R jenkins:jenkins /home/jenkins/.ssh && \
+    chmod 700 /home/jenkins/.ssh
+
+# SSH configuration
+RUN mkdir -p /var/run/sshd
+EXPOSE 22
+
+# Allow jenkins user to run sudo without password (optional but common)
+RUN apt-get update && apt-get install -y sudo && \
+    echo "jenkins ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Set default command to run SSH
+CMD ["/usr/sbin/sshd", "-D"]

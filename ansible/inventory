@@ -9,3 +9,6 @@
 10.0.2.76 
 10.0.1.230
 
+[local]
+localhost ansible_connection=local
+

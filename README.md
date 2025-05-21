@@ -1,150 +1,125 @@
-# 📘 Terraform AWS Network Architecture (VPC, Subnets, Route Tables, and Security Groups)
-
 ## 📌 Project Overview
+This project implements a modern CI/CD pipeline leveraging Jenkins, Ansible, and Terraform, fully automated and triggered via GitHub.
 
-This project defines the **network layer** for an AWS environment using Terraform. It includes the setup of a VPC, private and public subnets, route tables, internet/NAT gateway configuration, and security groups to securely host an RDS instance and application servers.
+Terraform provisions the cloud infrastructure, including VPCs, subnets, EC2 instances, and load balancers, using a modular approach to ensure scalability and reusability.
 
----
+Ansible configures the deployed infrastructure by installing and managing Jenkins master and slave nodes as well as the application deployment.
 
-## 📐 Architecture Summary
+Jenkins orchestrates the CI/CD workflows, automating build, test, and deployment processes for the application.
 
-### 🔧 Components
+GitHub serves as the source control and trigger mechanism, where code commits and pull requests initiate the pipeline execution, ensuring continuous integration and continuous delivery.
 
-* **VPC** with CIDR block: `10.0.0.0/16`
-* **3 Subnets:**
+This combination provides a robust, automated, and scalable pipeline that accelerates development cycles, improves reliability, and supports easy maintenance and extension.
 
-  * `10.0.1.0/24` - Private Subnet 01 (for RDS)
-  * `10.0.2.0/24` - Private Subnet 02 (for backend/app EC2)
-  * `10.0.3.0/24` - Public Subnet (for NAT Gateway / Bastion / Load Balancer)
+## 📁 Project Structure 
+```
+terraform/
+├── main.tf            # The main entry point that calls modules and resources
+├── local.tf           # Defines local variables used throughout the project
+├── variable.tf        # Declares input variables for this Terraform configuration
+├── terraform.tf       # Terraform settings file (state config, version constraints)
+├── provider.tf        # Provider configurations (e.g., AWS provider details)
+├── backend.tf         # Backend configuration for remote state storage (e.g., S3)
+└── modules/           # Contains reusable Terraform modules
+    ├── network/       # Module for VPC, subnets, security groups, routing tables
+    ├── instances/     # Module for EC2 instances, launch templates, autoscaling
+    └── alb/           # Module for Application Load Balancer (ALB) and target groups
+ansible/
+├── plays/             # Playbooks that define orchestration workflows
+│   ├── jenkins-master.yaml    # Playbook to deploy and configure Jenkins Master node
+│   ├── jenkins-slave.yaml     # Playbook to deploy and configure Jenkins Slave node(s)
+│   └── app.yaml               # Playbook for deploying and configuring the custom application
+└── roles/             # Roles encapsulate reusable tasks, handlers, templates, and vars
+    ├── jenkins-master/       # Role for Jenkins Master installation and setup
+    ├── jenkins-slave/        # Role for Jenkins Slave configuration and registration
+    └── app/                  # Role for deploying the custom application and dependencies
 
-### 📊 Route Tables
-
-* **Public Route Table:**
-
-  * Associated with Public Subnet
-  * Routes `0.0.0.0/0` → Internet Gateway
-
-* **Private Route Table (App):**
-
-  * Associated with Private Subnet 02
-  * Routes `0.0.0.0/0` → NAT Gateway (for outbound internet access)
-
-* **Private Route Table (DB):**
-
-  * Associated with Private Subnet 01
-  * No route to internet (unless needed for updates via NAT)
-
----
-
-## 🔐 Security Group Design
-
-### 📡 Public Security Group (Bastion / Load Balancer)
-
-* **Allow Inbound:**
-
-  * SSH (port `22`) from `0.0.0.0/0` *(for Bastion testing only — restrict in production)*
-  * HTTP/HTTPS from `0.0.0.0/0` *(for ALB)*
-* **Allow Outbound:** All traffic
-
-### 📦 App Security Group (EC2 in private subnet)
-
-* **Allow Inbound:**
-
-  * From ALB Security Group on app port (e.g., `3000` or `80`)
-* **Allow Outbound:**
-
-  * MySQL/PostgreSQL port to RDS SG
-  * Internet (via NAT)
-
-### 🗃️ RDS Security Group
-
-* **Allow Inbound:**
-
-  * Port `3306` (MySQL) or `5432` (Postgres)
-  * From App SG only (using `security_groups`)
-* **Allow Outbound:** All traffic (default for most cases)
-
----
-
-## 📁 Project Structure
 
 ```
-terraform-network/
-├── main.tf                   # Root main entry to call modules
-├── variables.tf              # Input variables at root
-├── terraform.tfvars          # Variable values
-├── modules/
-│   └── network/
-│       ├── vpc.tf
-│       ├── subnets.tf
-│       ├── route_tables.tf
-│       ├── nat_gateway.tf
-│       ├── internet_gateway.tf
-│       ├── security_groups.tf
-│       ├── variables.tf
-│       └── outputs.tf
-└── README.md                # This file
+## Working with Ansible and Accessing Jenkins Dashboard
+
+### Copy Ansible Directory to bastion EC2
+
+To copy your local `ansible` directory to your bastion EC2 instance, run:
+
+```bash
+scp -r -i ./my_key.pem ./ansible ubuntu@44.195.87.2:/home/ubuntu/
 ```
 
----
+### Sync Changes to EC2 Using rsync
+* To efficiently sync changes from your local ansible directory to the bastion EC2 instance, use:
+```bash
+rsync -avz -e "ssh -i my_key.pem" ./ansible/ ubuntu@44.195.87.2:/home/ubuntu/ansible/
+```
+### Running Ansible Playbooks
+* After copying or syncing the Ansible files to the bastion EC2 instance , execute the playbooks to configure your infrastructure or deploy applications.
 
-## 🔄 Terraform Module Inputs Example
-
-### Root `terraform.tfvars`
-
-```hcl
-my_vpc_cidr           = "10.0.0.0/16"
-public_subnet_cidr    = "10.0.3.0/24"
-private_subnet1_cidr  = "10.0.1.0/24"
-private_subnet2_cidr  = "10.0.2.0/24"
+```bash
+ansible-playbook plays/app.yaml
+ansible-playbook plays/jenkins-master.yaml
+ansible-playbook plays/jenkins-slave.yaml
 ```
 
-### Module Call in `main.tf`
-
-```hcl
-module "my-network" {
-  source               = "./modules/network"
-  my_vpc_cidr          = var.my_vpc_cidr
-  public_subnet_cidr   = var.public_subnet_cidr
-  private_subnet1_cidr = var.private_subnet1_cidr
-  private_subnet2_cidr = var.private_subnet2_cidr
-}
+### Access Jenkins Dashboard via SSH Port Forwarding
+* Jenkins runs in a private subnet, so direct access is restricted. To access the Jenkins web interface securely, use SSH port forwarding through the bastion host:
+```markdown
+ssh -i my_key.pem -L <local-port>:<target-private-ip>:<target-port> ubuntu@<bastion-public-ip>
+```
+**Example:**
+```bash
+ssh -i my_key.pem -L 8080:10.0.2.100:8080 ubuntu@18.234.100.5
 ```
 
----
+## Jenkins Master and Slave SSH Key Setup
+To enable secure and seamless communication between your Jenkins master and slave nodes, you need to generate an SSH key pair on the Jenkins master container and copy the public key to the Jenkins slave container.
+### Important Notes:
+* You should have two private EC2 instances: one running the Jenkins master container, and the other running the Jenkins slave container.
 
-## 📝 Outputs from Module (Example)
+* This setup allows the master to securely connect to the slave for executing jobs without needing to manually enter passwords.
 
-```hcl
-output "vpc_id" {
-  value       = aws_vpc.network_my_vpc.id
-  description = "The ID of the created VPC"
-}
+### Steps:
+* Generate SSH Key on the Jenkins Master Container
+  First, access your Jenkins master container:
+```bash
+  sudo docker exec -it jenkins-master-container bash
+```
+* Inside the container, generate an SSH key pair (if not already created):
+```bash
+ssh-keygen
+```
+* Copy the Public Key to the Jenkins Slave Container
+Next, copy the public key content from the master container:
+```bash
+cat ~/.ssh/id_rsa.pub
 
-output "public_subnet_id" {
-  value = aws_subnet.public_subnet.id
-}
+```
+* Then, access your Jenkins slave container ans copy public key in authorized_keys file:
+```bash
+sudo docker exec -it jenkins-slave-container bash
+touch ~/.ssh/authorized_keys
+```
+### ⚠️ Note:
+⚠️ Note:
+Make sure that:
+
+✅ The Jenkins master EC2 instance can ping the Jenkins slave EC2 instance:
+```bash
+ping <slave-private-ip>
+
+```
+✅ The Jenkins master container can successfully SSH into the Jenkins slave container using port 2222:
+
+```bash
+ssh -p 2222 jenkins@10.0.1.224
 ```
 
----
+This ensures that Jenkins jobs can be delegated from the master to the slave node without issues.
 
-## ✅ Best Practices
+🛠️ You may need to:
 
-* Use **least privilege** in SGs
-* Keep **RDS in a private subnet** with no direct internet
-* Use **NAT Gateway** only when needed (adds cost)
-* Don't open ports like SSH to `0.0.0.0/0` in production
-* Document module inputs/outputs clearly
-
----
-
-## 📣 Future Enhancements
-
-* Add ALB and EC2 module
-* Add NAT Gateway only for app tier
-* Add Route53 private DNS support
-* Enable Flow Logs for VPC for audit
-
----
-
-Let me know if you'd like this architecture diagrammed visually too!
+Adjust Security Group rules to allow:
+- ICMP (for ping)
+- TCP port 22 (for normal SSH)
+- TCP port 2222 (for container-to-container SSH, if mapped)
+- Ensure proper routing and subnet configuration (especially in private networks).
+- Generate an SSH key inside the Jenkins master container, and copy the public key to the slave container's ~/.ssh/authorized_keys.

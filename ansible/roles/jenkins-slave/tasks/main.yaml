@@ -1,0 +1,84 @@
+
+- name: Install required packages
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+    state: present
+    update_cache: true
+
+- name: Add Docker’s official GPG key
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add Docker repository
+  apt_repository:
+    repo: deb https://download.docker.com/linux/ubuntu focal stable
+    state: present
+
+- name: Install Docker
+  apt:
+    name: docker-ce
+    state: latest
+    update_cache: true
+
+- name: Create build directory
+  file:
+    path: /tmp/jenkins-slave
+    state: directory
+    mode: '0755'
+
+- name: Copy jenkins-slave Dockerfile to /tmp/jenkins-slave
+  copy:
+    src: ../../../Dockerfiles/Dockerfile.jenkins-slave  
+    dest: /tmp/jenkins-slave/Dockerfile
+    mode: '0644'
+
+
+- name: Ensure pip3 is installed on ubuntu
+  apt: 
+    name: python3-pip
+    state: present
+
+
+- name: Ensure Docker SDK for Python is installed
+  ansible.builtin.pip:
+    name: docker
+    executable: pip3
+
+- name: Build jenkins slave Dockerfile
+  community.docker.docker_image:
+    name: jenkins-slave
+    source: build
+    build:
+      path: /tmp/jenkins-slave
+      nocache: yes  
+
+
+
+- name: run container for jenkins slave from  community.docker.docker_image
+  community.docker.docker_container:
+    name: jenkins-slave-container
+    image: jenkins-slave
+    state: started
+    ports:
+      - "2222:22"
+
+# - name: Read SSH public key of Jenkins master from file
+#   slurp:
+#     src: "/tmp/master_ssh_key.pub"
+#   register: pubkey_file
+#   delegate_to: localhost 
+# - name: Inject master’s SSH public key into slave’s authorized_keys
+#   community.docker.docker_container_exec:
+#     container: jenkins-slave-container
+#     command: >
+#       bash -c "mkdir -p /home/jenkins/.ssh &&
+#                echo '{{ pubkey_file.content | b64decode }}' >> /home/jenkins/.ssh/authorized_keys &&
+#                chmod 600 /home/jenkins/.ssh/authorized_keys &&
+#                chmod 700 /home/jenkins/.ssh &&
+#                chown -R jenkins:jenkins /home/jenkins/.ssh"
+#     delegate_to: 10.0.1.224           
