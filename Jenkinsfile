@@ -31,9 +31,9 @@ pipeline {
         }
       }
        stage('Terraform Apply'){
-            when{
-                changeset "**/terraform**"
-            }
+            // when{
+            //     changeset "**/terraform**"
+            // }
             steps{
                 echo '✅ Terraform folder changed. Running terraform apply...'
 
