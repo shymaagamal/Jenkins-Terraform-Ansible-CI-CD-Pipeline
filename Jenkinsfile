@@ -34,8 +34,19 @@ pipeline {
             steps{
                 echo '✅ Terraform folder changed. Running terraform apply...'
 
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'shaimaa-aws-access']]){
+                withCredentials([
+                                    [$class: 'AmazonWebServicesCredentialsBinding',
+                                    credentialsId: 'shaimaa-aws-access',
+                                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY',
+                                    sessionTokenVariable: 'AWS_SESSION_TOKEN'  // optional, needed if using temporary creds
+                                    ]
+                                    ]) {
                     dir('terraform'){
+                      sh '''
+                        echo "Injected AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID: -4}"
+                        '''
+ 
                       sh 'terraform init'
                       sh 'terraform plan'
                       sh 'terraform apply -auto-approve'
