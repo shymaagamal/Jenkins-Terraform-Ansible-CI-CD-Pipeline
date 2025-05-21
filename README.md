@@ -1,15 +1,16 @@
 ## 📌 Project Overview
-This project implements a modern CI/CD pipeline leveraging Jenkins, Ansible, and Terraform, fully automated and triggered via GitHub.
+This project implements a modern, fully automated **CI/CD pipeline** that integrates **Jenkins**, **Ansible**, and **Terraform**, triggered seamlessly via **GitHub**.
 
-Terraform provisions the cloud infrastructure, including VPCs, subnets, EC2 instances, and load balancers, using a modular approach to ensure scalability and reusability.
+- **Terraform** is responsible for provisioning the underlying cloud infrastructure. It uses a modular structure to create and manage essential components such as VPCs, private and public subnets, EC2 instances, and Application Load Balancers (ALBs). This modularity ensures the infrastructure is scalable, reusable, and easy to maintain or extend.
 
-Ansible configures the deployed infrastructure by installing and managing Jenkins master and slave nodes as well as the application deployment.
+- **Ansible** handles the configuration management and orchestration. It automates the installation and setup of Jenkins master and slave nodes, as well as application deployment on the provisioned EC2 instances. Using roles and playbooks promotes clear separation of concerns and reusable automation scripts.
 
-Jenkins orchestrates the CI/CD workflows, automating build, test, and deployment processes for the application.
+- **Jenkins** serves as the CI/CD orchestration engine. It automates the building, testing, and deployment of the application. The pipeline triggered by GitHub events (such as commits and pull requests) ensures continuous integration and delivery, accelerating development cycles while maintaining high reliability.
 
-GitHub serves as the source control and trigger mechanism, where code commits and pull requests initiate the pipeline execution, ensuring continuous integration and continuous delivery.
+- **GitHub** acts as the version control system and the trigger mechanism for the pipeline. Integration with GitHub enables automated pipeline runs on code changes, promoting rapid feedback and seamless collaboration among development teams.
 
-This combination provides a robust, automated, and scalable pipeline that accelerates development cycles, improves reliability, and supports easy maintenance and extension.
+Together, these tools provide a robust, scalable, and maintainable pipeline solution that enhances deployment speed, improves operational reliability, and supports future growth and complexity.
+
 
 ## 📁 Project Structure 
 ```
@@ -40,20 +41,19 @@ ansible/
 
 ### Copy Ansible Directory to bastion EC2
 
-To copy your local `ansible` directory to your bastion EC2 instance, run:
+I copied my local `ansible` directory to the bastion EC2 instance using the following command:
 
 ```bash
 scp -r -i ./my_key.pem ./ansible ubuntu@44.195.87.2:/home/ubuntu/
 ```
 
 ### Sync Changes to EC2 Using rsync
-* To efficiently sync changes from your local ansible directory to the bastion EC2 instance, use:
+* To efficiently sync changes from my local ansible directory to the bastion EC2 instance, I used this command:
 ```bash
 rsync -avz -e "ssh -i my_key.pem" ./ansible/ ubuntu@44.195.87.2:/home/ubuntu/ansible/
 ```
 ### Running Ansible Playbooks
-* After copying or syncing the Ansible files to the bastion EC2 instance , execute the playbooks to configure your infrastructure or deploy applications.
-
+* fter copying or syncing the Ansible files to the bastion EC2 instance, I executed the playbooks to configure the infrastructure and deploy the applications.
 ```bash
 ansible-playbook plays/app.yaml
 ansible-playbook plays/jenkins-master.yaml
@@ -61,7 +61,7 @@ ansible-playbook plays/jenkins-slave.yaml
 ```
 
 ### Access Jenkins Dashboard via SSH Port Forwarding
-* Jenkins runs in a private subnet, so direct access is restricted. To access the Jenkins web interface securely, use SSH port forwarding through the bastion host:
+* Jenkins runs in a private subnet, so direct access is restricted. To access the Jenkins web interface securely, I set up SSH port forwarding through the bastion host.
 ```markdown
 ssh -i my_key.pem -L <local-port>:<target-private-ip>:<target-port> ubuntu@<bastion-public-ip>
 ```
@@ -71,13 +71,14 @@ ssh -i my_key.pem -L 8080:10.0.2.100:8080 ubuntu@18.234.100.5
 ```
 
 ## Jenkins Master and Slave SSH Key Setup
-To enable secure and seamless communication between your Jenkins master and slave nodes, you need to generate an SSH key pair on the Jenkins master container and copy the public key to the Jenkins slave container.
+I generated an SSH key pair inside the Jenkins master container and copied the public key to the Jenkins slave container to enable secure, passwordless SSH communication between them.
+
 ### Important Notes:
-* You should have two private EC2 instances: one running the Jenkins master container, and the other running the Jenkins slave container.
+* The infrastructure includes two private EC2 instances: one hosting the Jenkins master container and the other hosting the Jenkins slave container.
 
-* This setup allows the master to securely connect to the slave for executing jobs without needing to manually enter passwords.
+* his setup enables the Jenkins master to securely SSH into the slave container to execute jobs seamlessly, eliminating the need for manual password entry.
 
-### Steps:
+### 📌 Steps:
 * Generate SSH Key on the Jenkins Master Container
   First, access your Jenkins master container:
 ```bash
@@ -122,3 +123,37 @@ Adjust Security Group rules to allow:
 - TCP port 2222 (for container-to-container SSH, if mapped)
 - Ensure proper routing and subnet configuration (especially in private networks).
 - Generate an SSH key inside the Jenkins master container, and copy the public key to the slave container's ~/.ssh/authorized_keys.
+
+
+### 🛠️ Jenkins Agent (Slave) GUI Configuration
+
+To configure the Jenkins slave (agent) node via the Jenkins UI, follow these steps:
+
+1. Go to **Manage Jenkins** → **Manage Nodes and Clouds** → **New Node**.
+2. Enter a name (e.g., `slave`) and select **Permanent Agent**, then click **OK**.
+3. Fill out the configuration form using the following values:
+
+| Field                     | Value (Example)                                                                 |
+|---------------------------|----------------------------------------------------------------------------------|
+| **# of Executors**        | `2` — Allows 2 parallel jobs on this agent                                      |
+| **Remote root directory** | `/home/jenkins` — This is the home directory for the agent (on EC2/container)   |
+| **Labels**                | `slave` — Used to assign specific jobs to this agent                            |
+| **Usage**                 | Use this node as much as possible                                               |
+| **Launch Method**         | ✅ Select **"Launch agents via SSH"**                                           |
+| **Host**                  | `10.0.1.224` — Private IP of the slave EC2 instance                             |
+| **Credentials**           | Select SSH credentials for the `jenkins` user (must be preconfigured in Jenkins)|
+| **Host Key Verification Strategy** |Known hosts file Verification Strategy   |
+| **SSH Port**              | `2222`         |
+
+4. Click **Save**.
+
+
+### 📌 Adding Slave to Known Hosts (Manually)
+
+Before configuring the connection in the Jenkins GUI, I manually added the slave’s SSH host key to the Jenkins master’s `known_hosts` file to avoid host key verification issues.
+
+I ran the following command **inside the Jenkins master container**:
+
+```bash
+ssh-keyscan -p 2222 10.0.1.224 >> /var/jenkins_home/.ssh/known_hosts
+```
