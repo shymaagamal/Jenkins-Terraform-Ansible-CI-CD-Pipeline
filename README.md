@@ -217,3 +217,6 @@ ngrok http 8080
 `💡 Note: Jenkins automatically handles /github-webhook/ if GitHub plugin is installed.`
 
 
+#### 🌐 Application Access and Verification
+Once the infrastructure is provisioned and the CI/CD pipeline successfully deploys the application to austo scaling group, i can verify that everything is working by accessing the application through the Application Load Balancer (ALB).
+![application on nginx](app.png)
