@@ -52,5 +52,32 @@ pipeline {
             }
         }
 
+        stage('Ansible Playbook'){
+            steps{
+              echo '📦 Ansible folder changed. Syncing to bastion and executing playbooks...'
+              withCredentials([sshUserPrivateKey(credentialsId: 'bastion-access', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')]) {
+                dir('ansible'){
+                    sh """
+                       rsync -avz -e "ssh -i $SSH_KEY -o StrictHostKeyChecking=no" ./ansible/ ubuntu@44.195.38.202:/home/ubuntu/
+      
+                    """
+                    // Run Ansible Playbooks *on the bastion host*
+                    sh """
+                      echo "SSH_USER is $SSH_USER"
+                      ssh -i $SSH_KEY -o StrictHostKeyChecking=no $SSH_USER@44.195.38.202 << 'EOF'
+                        cd /home/ubuntu/ansible
+                        ansible-playbook plays/app.yaml
+                        ansible-playbook plays/jenkins-master.yaml
+                        ansible-playbook plays/jenkins-slave.yaml
+                      EOF
+                    """
+
+                }
+              }
+            }
+        }
+
+
+
     }
 }
