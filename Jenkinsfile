@@ -30,5 +30,24 @@ pipeline {
                 '''
         }
       }
+       stage('Terraform Apply'){
+            when{
+                changeset "**/terraform**"
+            }
+            steps{
+                echo '✅ Terraform folder changed. Running terraform apply...'
+
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'shaimaa-aws-access']]){
+                    dir('terraform'){
+                      sh 'terraform init'
+                      sh 'terraform plan'
+                      sh 'terraform apply -auto-approve'
+
+                    }
+                }
+
+            }
+        }
+
     }
 }
