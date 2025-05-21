@@ -57,6 +57,13 @@ pipeline {
               echo '📦 Ansible folder changed. Syncing to bastion and executing playbooks...'
               withCredentials([sshUserPrivateKey(credentialsId: 'bastion-access', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')]) {
                 dir('ansible'){
+                    sh '''
+                        if ! command -v rsync &> /dev/null
+                        then
+                            echo "Installing rsync..."
+                            sudo apt-get update && sudo apt-get install -y rsync
+                        fi
+                    '''
                     sh """
                        rsync -avz -e "ssh -i $SSH_KEY -o StrictHostKeyChecking=no" ./ansible/ ubuntu@44.195.38.202:/home/ubuntu/
       
