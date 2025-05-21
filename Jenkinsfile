@@ -25,9 +25,9 @@ pipeline {
         }
       }
         stage('Terraform Apply'){
-            when{
-                changeset "**/terraform**"
-            }
+            // when{
+            //     changeset "**/terraform**"
+            // }
             steps{
                 echo '✅ Terraform folder changed. Running terraform apply...'
 
@@ -45,9 +45,9 @@ pipeline {
 
 
         stage('Ansible Playbook'){
-          when {
-            changeset "**/ansible/**"
-          }
+          // when {
+          //   changeset "**/ansible/**"
+          // }
             steps{
               echo '📦 Ansible folder changed. Syncing to bastion and executing playbooks...'
               withCredentials([sshUserPrivateKey(credentialsId: 'bastion-access', keyFileVariable: 'SSH_KEY', usernameVariable: 'SSH_USER')]) {
