@@ -65,7 +65,8 @@ pipeline {
                         fi
                     '''
                     sh """
-                       rsync -avz -e "ssh -i $SSH_KEY -o StrictHostKeyChecking=no" ./ansible/ ubuntu@44.195.38.202:/home/ubuntu/
+                    
+                       rsync -avz -e "ssh -i $SSH_KEY -o StrictHostKeyChecking=no" . $SSH_USER@44.195.38.202:/home/ubuntu/
       
                     """
                     // Run Ansible Playbooks *on the bastion host*
