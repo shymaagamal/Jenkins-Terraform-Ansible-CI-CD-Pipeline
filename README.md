@@ -99,7 +99,6 @@ sudo docker exec -it jenkins-slave-container bash
 touch ~/.ssh/authorized_keys
 ```
 ### ⚠️ Note:
-⚠️ Note:
 Make sure that:
 
 ✅ The Jenkins master EC2 instance can ping the Jenkins slave EC2 instance:
