@@ -1,3 +1,7 @@
+### 🖼️ CI/CD Infrastructure Overview
+
+![CI/CD Infra Diagram](infra-diagram.png)
+
 ## 📌 Project Overview
 This project implements a modern, fully automated **CI/CD pipeline** that integrates **Jenkins**, **Ansible**, and **Terraform**, triggered seamlessly via **GitHub**.
 
